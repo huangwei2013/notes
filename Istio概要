@@ -1,0 +1,61 @@
+由Google、IBM和Lyft开源的微服务管理、保护和监控框架
+
+# 文档
+    官方中文：https://istio.doczh.cn
+    操作实例：https://www.jianshu.com/p/c45bbd7f7733
+    企业级服务网格架构之路解读： https://jimmysong.io/posts/the-enterprise-path-to-service-mesh-architectures/
+    从SOA到ServiceMesh： https://www.cnblogs.com/lonelyxmas/p/10394056.html
+
+# 组件
+## Envoy
+	（c++）代理，作为sidecar【智能代理、流量控制】
+        - lstio使用大量Envoy内建特性
+            - 服务发现与负载均衡、流量拆分、故障注入（fault injection）、熔断器、分阶段发布等
+## Pilot
+	替代Istio Manager，管理代理的配置【服务发现、流量管理】
+        - 服务的通信策略分发至 Istio mesh 中所有的 Envoy 实例
+## Mixer
+	集成模块【访问控制、遥测】
+        - 在 Istio 中集成各种生态的基础设施后端系统
+            - 通过即插即用的适配器集，通过标准的配置模型，使 Istio 能够方便地与现有的服务进行集成
+## Citadel 
+	替代 Istio Auth【终端用户认证、流量加密】
+        - 为跨 mesh 的服务与服务之间的通信进行证书签名与轮换，提供双向认证与双向授权功能
+## Galley
+	（1.1新增）【验证、处理和分配配置】
+
+
+
+|     | 数据平面  | 控制平面  |
+|:-    |:------:|-:|
+| Istio  | Envoy | Mixer, Pilot, Citadel |
+| Linkerd  | Linkerd |namerd |
+|   | 通常是按照无状态目标设计的
+    - 但实际为提高流量转发性能，需要缓存一些数据，因此无状态有争议
+直接处理入站和出站数据包
+    - 转发、路由、健康检查、负载均衡、认证、鉴权、产生监控数据等
+对应用来说透明，即可以做到无感知部署 | 不直接解析数据包
+与数据平面中的代理通信，下发策略和配置
+负责网络行为的可视化
+通常提供 API 或者命令行工具可用于配置版本化管理，便于持续集成和部署 |
+
+
+
+# 如何在 Kubernetes 中工作
+
+    1、Istio 将服务请求路由到目的地址，根据其中的参数判断是到生产环境、测试环境还是 staging 环境中的服务（服务可能同时部署在这三个环境中），是路由到本地环境还是公有云环境？所有的这些路由信息可以动态配置，可以是全局配置也可以为某些服务单独配置。
+    2、当 Istio 确认了目的地址后，将流量发送到相应服务发现端点，在 Kubernetes 中是 service，然后 service 会将服务转发给后端的实例。
+    3、Istio 根据它观测到最近请求的延迟时间，选择出所有应用程序的实例中响应最快的实例。
+    4、Istio 将请求发送给该实例，同时记录响应类型和延迟数据。
+    5、如果该实例挂了、不响应了或者进程不工作了，Istio 将把请求发送到其他实例上重试。
+    6、如果该实例持续返回 error，Istio 会将该实例从负载均衡池中移除，稍后再周期性的重试。
+    7、如果请求的截止时间已过，Istio 主动以失败的方式结束该请求，而不是再次尝试添加负载。
+    8、Istio 以 metric 和分布式追踪的形式捕获上述行为的各个方面，这些追踪信息将发送到集中 metric 系统。
+
+
+# 实践-UCloud
+## 性能差异
+	Istio 1.0，UAEK内部环境，5ms延迟
+	policy组件对性能的影响
+	Telemetry组件对QPS的影响(Istio新版已解决，到达 3.5w QPS)
+	IPv6的不支持，UAEK自研版本解决，Istio发行版不确定
