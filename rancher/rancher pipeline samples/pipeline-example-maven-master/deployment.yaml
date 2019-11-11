@@ -1,0 +1,36 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: greenhouse-service
+spec:
+  selector:
+    app: greenhouse
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-greenhouse
+  labels:
+    app: greenhouse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: greenhouse
+  template:
+    metadata:
+      labels:
+        app: greenhouse
+    spec:
+      imagePullSecrets:
+      - name: pipeline-docker-registry
+      containers:
+      - name: maven
+        image: ${CICD_IMAGE}:${CICD_EXECUTION_SEQUENCE}
+        ports:
+        - containerPort: 8080
