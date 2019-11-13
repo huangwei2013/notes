@@ -1,0 +1,70 @@
+
+
+# 源码包准备
+
+```shell
+mkdir -p $GOPATH/src/github.com/rancher
+cd $GOPATH/src/github.com/rancher
+git clone https://github.com/rancher/rancher.git
+cd rancher
+git checkout v2.2.3-rc9
+```
+
+* 注1：
+尝试过 git clone xx --depth=1 然后编译，始终无法正确拉取对应依赖包
+
+# 编译和打包镜像
+```shell
+cd $GOPATH/src/github.com/rancher/rancher
+./scripts/build
+
+//打成docker image
+// - 根据dockfile定义执行，包括会下载baseimage等
+./scripts/package
+ ```
+
+* 注2：
+编译、打包过程都出错中断过几次，重复执行，却都成功了。归咎于网络、服务器繁忙导致timeout吧
+    
+* 注3：
+打包过程，唯一需要调整的，是创建 ./dist ,打包最后阶段需要向其中写入新生成镜像的名称, 但不知为何脚本本身缺少了创建该目录
+
+
+* 注4:
+    调整了一行编译脚本内容
+对编译脚本 ./scripts/package 从
+```shell
+echo Built ${IMAGE} #${AGENT_IMAGE}
+```
+改为
+```shell
+echo Built ${IMAGE} ${AGENT_IMAGE}
+ ```
+
+# 结果
+
+编译后的文件存放在 $GOPATH/src/github.com/rancher/rancher/bin 目录
+查看
+```shell
+./rancher -h
+./agent
+```
+
+执行完编译后, 新的rancher-agent 加入了镜像仓库(但没看到rancher..)
+```shell
+[root@iZm5efctez2mq4wk8wbhsyZ rancher]# docker images
+REPOSITORY                   TAG                 IMAGE ID            CREATED              SIZE
+rancher/rancher-agent        dev                 42545cac55a7        About a minute ago   283MB
+```
+
+
+
+# 备注
+```
+centos 7.6
+2C4G
+go version go1.13.4 linux/amd64
+```
+
+# 参考
+     https://blog.csdn.net/vah101/article/details/91387027
