@@ -36,10 +36,13 @@ cd $GOPATH/src/github.com/rancher/rancher
 ```shell
 echo Built ${IMAGE} #${AGENT_IMAGE}
 ```
-改为
+改为(去掉注释符号)
 ```shell
 echo Built ${IMAGE} ${AGENT_IMAGE}
  ```
+ 
+ * 注5:
+    重复编译时,会提示 /tmp/system-charts 已经存在,需要手动删除后再编译
 
 # 结果
 
@@ -66,5 +69,13 @@ centos 7.6
 go version go1.13.4 linux/amd64
 ```
 
+# 附录
+## UI
+UI相关项目在 https://github.com/rancher/ui ，为一个单独项目，并提供了多语言&自定义界面的开发框架 (https://github.com/rancher/ui-driver-skel)
+rancher自带的UI，为该项目编译后的静态内容，通过 server/ui/ui.go 驱动
+在容器中，对应目录为 /usr/share/rancher/ui/
+
 # 参考
-     https://blog.csdn.net/vah101/article/details/91387027
+```shell
+ https://blog.csdn.net/vah101/article/details/91387027
+```

@@ -1,0 +1,148 @@
+
+# 元数据管理
+设计上,镜像元数据和镜像文件存储, 完全隔离
+元数据三个层次, 从上到下
+* repository
+* image
+* layer
+
+## repository
+存储了所有本地镜像信息：
+* 镜像名称
+* 标签
+* 对应镜像ID
+    默认镜像ID = SHA256(元数据配置文件)
+
+```shell
+文件地址
+/var/lib/docker/image/overlay2/repository.json
+```
+
+## image
+
+存储
+* 镜像 ID 与镜像元数据之间的映射关系
+* 镜像元数据
+    * 镜像架构(如 amd64)
+    * 操作系统(如 linux)
+    * 镜像默认配置
+    * 构建该镜像的容器 ID 和配置
+    * 创建时间
+    * 创建该镜像的 docker 版本
+    * 构建镜像的历史信息
+    * rootfs 组成
+    
+其中构建镜像的历史信息和 rootfs 组成部分除了具有描述镜像的作用外，还将镜像和构成该镜像的镜像层关联了起来。
+Docker 会根据历史信息和 rootfs 中的 diff_ids 计算出构成该镜像的镜像层的存储索引 chainID，这也是 docker 1.10 镜像存储中基于内容寻址的核心技术
+
+
+```shell
+文件地址
+/var/lib/docker/image/overlay2/imagedb/content/sha256/<image_id>
+```
+
+### 镜像层次
+
+* 每个 diff_id 对应一个镜像层
+* 从上到下依次表示镜像层的最低层到最顶层
+
+示例：
+```shell
+    "rootfs": {
+        "diff_ids": [
+            "sha256:cc967c529ced563b7746b663d98248bc571afdb3c012019d7f54d6c092793b8b",
+            "sha256:2c6ac8e5063e35e91ab79dfb7330c6154b82f3a7e4724fb1b4475c0a95dfdd33",
+            "sha256:6c01b5a53aac53c66f02ea711295c7586061cbe083b110d54dafbeb6cf7636bf",
+            "sha256:e0b3afb09dc386786d49d6443bdfb20bc74d77dcf68e152db7e5bb36b1cca638",
+            "sha256:fd54b0823b01ae28cd33bbc3fa47db6b59589fbb402d01a40af684bd48f6fb6b",
+            "sha256:8997fe0f968ed8674933e954332320877bcc3562368498037b576d76b31b8e3d",
+            "sha256:c56a590b6dbd81c0482e5df5123fbe3439d4143a0f2b5fdd1f1ec7a0eb9f7def"
+        ],
+        "type": "layers"
+    }
+```
+
+
+## layer
+
+### >= docker V1.10
+
+* roLayer : 描述不可改变的镜像层
+* mountedLayer : 描述可读写的容器层
+
+在 layer 的所有属性中，diffID 采用 SHA256 算法，基于镜像层文件包的内容计算得到。而 chainID 是基于内容存储的索引，它是根据当前层与所有祖先镜像层 diffID 计算出来的，具体算如下：
+
+* 如果该镜像层是最底层(没有父镜像层)，该层的 diffID 便是 chainID
+* 该镜像层的 chainID 计算公式为 chainID(n)=SHA256(chain(n-1) diffID(n))，也就是根据父镜像层的 chainID 加上一个空格和当前层的 diffID，再计算 SHA256 校验码
+
+#### roLayer
+存储的主要内容
+* 该镜像层的 chainID
+* 该镜像层的校验码 diffID
+* 父镜像层 parent
+* 当前镜像层文件的 cacheID
+* 该镜像层的 size 
+
+#### mountedLayer
+内容为
+* initID：容器init层在 graphdriver中的ID
+* mountID：读写层在graphdriver中的ID
+* parentID：容器层父镜像的chainID
+
+```shell
+文件地址
+/var/lib/docker/image/<graph_driver>/layerdb/mounts/<container_id>/
+```
+
+# 文件层次
+目前是基于 overlay2 维护的文件层次，示意图如下:
+![bd7b3cff8b3955c0f24f42a62f98027d.png](en-resource://database/3577:1)
+
+文件层次：(overlayFS)
+* mergedDir：对外呈现的文件层
+* upperDir：容器层，可读写
+* * 最开始是基于lowerDir
+* * 随着CopyOnWrite逐渐有独立内容：当有大文件第一次被修改时，性能消耗在此
+* lowerDir：镜像层，只读
+
+# 常用操作
+## docker 命令相关
+### docker images -a：查看image构成
+-a :列出本地所有的镜像（含中间映像层，默认情况下，过滤掉中间映像层）；
+
+### docker history：查看image构建过程
+即逐行输出 dockerfile 的内容
+```shell
+#docker history 镜像名称
+
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT
+c583c217e121        2 weeks ago         /bin/sh -c #(nop)  LABEL org.label-schema.vc…   0B                  
+<missing>           2 weeks ago         /bin/sh -c #(nop)  LABEL org.label-schema.vc…   0B                  
+<missing>           2 weeks ago         /bin/sh -c #(nop)  LABEL org.label-schema.sc…   0B                  
+...  省略部分             
+<missing>           2 weeks ago         /bin/sh -c #(nop)  ARG ARCH=amd64               0B                  
+<missing>           2 weeks ago         /bin/sh -c #(nop) WORKDIR /var/lib/rancher      0B                  
+<missing>           2 weeks ago         /bin/sh -c mkdir /root/.kube &&     ln -s /e…   91B                 
+<missing>           2 weeks ago         /bin/sh -c apt-get update && apt-get install…   123MB               
+<missing>           4 weeks ago         /bin/sh -c #(nop)  CMD ["/bin/bash"]            0B                  
+<missing>           4 weeks ago         /bin/sh -c mkdir -p /run/systemd && echo 'do…   7B                  
+<missing>           4 weeks ago         /bin/sh -c set -xe   && echo '#!/bin/sh' > /…   745B                
+<missing>           4 weeks ago         /bin/sh -c [ -z "$(apt-get indextargets)" ]     987kB               
+<missing>           4 weeks ago         /bin/sh -c #(nop) ADD file:d13b09e8b3cc98bf0…   63.2MB 
+```
+
+命令被截断了，不方便看？
+```shell
+#docker history 镜像名称 --no-trunc              //不截断命令，查看完整内容
+
+输出太长，省略了
+```
+
+### docker inspect：详情
+相当于image各层完整信息的查看
+
+![70beb6450617f7dc3c19c87fd36b7ce4.png](en-resource://database/3575:2)
+其中，图中的json，对应上文提到的image等元数据结构
+
+# 参看
+https://www.cnblogs.com/sparkdev/p/9121188.html
