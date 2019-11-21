@@ -1,0 +1,52 @@
+# 基础信息
+基础信息，需要另外方式获取
+(目前是在rancher浏览器中截取下的信息；系统对接，需要在rancher登录时获取并保存)
+
+```shell
+export RANCHER_HOST="{IP地址}"
+export R_USERNAME="{登录账号}"
+export R_SESS="token-x5jrv:{登录后生成的token}"
+export cookie="R_USERNAME=${R_USERNAME}; R_SESS=${R_SESS}"
+```
+
+* 接口太多，以下列表不全，只做示范
+
+## apiRoot
+以下所有模块的基本地址(apiRoot)
+```shell
+    curl http://${RANCHER_HOST}/v3 -L -k --cookie "${cookie}"
+ ```
+ 具体要访问资源的地址，在返回的 links 段中获取
+ 
+## 资源：token
+获取token基本信息和操作入口:
+```shell
+        curl http://${RANCHER_HOST}/v3/tokens -L -k --cookie "${cookie}"
+ ```
+返回
+```shell
+        正常数据，或无权限时如下
+        {"type":"error","status":"401","message":"must authenticate"}
+```
+
+authProvider:
+```shell
+        curl http://${RANCHER_HOST}/v3/tokens?sort=authProvider -L -k --cookie "${cookie}"
+```
+
+tokens/helm-token-user-xtmvc:
+```shell
+curl http://${RANCHER_HOST}/v3/tokens/helm-token-user-xtmvc -L -k --cookie "${cookie}"
+```
+
+## 资源：node
+获取节点基本信息和操作入口：
+```shell
+curl http://${RANCHER_HOST}/v3/nodes -L -k --cookie "${cookie}"
+```
+
+## 资源：clusters
+获取集群基本信息和操作入口：
+```shell
+curl http://${RANCHER_HOST}/v3/clusters -L -k --cookie "${cookie}"
+```
