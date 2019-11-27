@@ -3,13 +3,34 @@
 (目前是在rancher浏览器中截取下的信息；系统对接，需要在rancher登录时获取并保存)
 
 ```shell
-export RANCHER_HOST="{IP地址}"
-export R_USERNAME="{登录账号}"
-export R_SESS="token-x5jrv:{登录后生成的token}"
+export RANCHER_HOST="Rancher Server 部署的 IP"
+export R_USERNAME="admin"
+export R_SESS="token-x5jrv:xs5ckr9nv25bpcpcsw5wt8wrmhr2mjgp9zzz98jcw7vhqqkrbz4tcc"
 export cookie="R_USERNAME=${R_USERNAME}; R_SESS=${R_SESS}"
 ```
 
-* 接口太多，以下列表不全，只做示范
+## 登录 login
+```shell
+    curl http://${RANCHER_HOST}/v3-public/localProviders/local?action=login -k
+
+    POST数据如下：
+        {"username":"${R_USERNAME}","password":"${PASSWORD}","description":"UI Session","responseType":"cookie","ttl":57600000,"labels":{"ui-session":"true"}}
+ ```
+        
+        
+当验证通过时，返回
+```shell
+    httpcode=200
+        header字段，取出 R_SESS 备用：
+            Set-Cookie: R_SESS=token-knjhs:cc5mgzxs8nnpl9vdjbj8fzg68jl4dnhj74l96ktp5n2jr9xbwdppm6; Path=/; HttpOnly; Secure
+
+ ```
+ 
+当验证失败时，返回
+```shell
+    httpcode=401
+    data内容，{"baseType":"error","code":"Unauthorized","message":"authentication failed","status":401,"type":"error"}
+```
 
 ## apiRoot
 以下所有模块的基本地址(apiRoot)
@@ -17,6 +38,8 @@ export cookie="R_USERNAME=${R_USERNAME}; R_SESS=${R_SESS}"
     curl http://${RANCHER_HOST}/v3 -L -k --cookie "${cookie}"
  ```
  具体要访问资源的地址，在返回的 links 段中获取
+ 
+ * 接口太多，以下列表不全，只做示范
  
 ## 资源：token
 获取token基本信息和操作入口:
@@ -50,3 +73,21 @@ curl http://${RANCHER_HOST}/v3/nodes -L -k --cookie "${cookie}"
 ```shell
 curl http://${RANCHER_HOST}/v3/clusters -L -k --cookie "${cookie}"
 ```
+
+# 版本变化
+## API
+v2.x相较于v1.6，api和api实现有较大变化 (sad，更封闭了~.~)
+* API
+v1.6的websocket接口被去掉，参看 [v1.6说明](
+https://rancher.com/docs/rancher/v1.6/en/api/v2-beta/) 末尾一段websocket部分。
+对比看 [v2.x说明](
+https://rancher.com/docs/rancher/v2.x/en/api/) (websocket部分已被删去)
+
+    * gitee 上有个 rancher-exporter 项目在新版上应该不可用了(anyway，项目本身好像也缺少维护，反正没编译成功 ( ╯□╰ )) 
+
+* API实现
+v1.6基于 [go-rancher](
+https://github.com/rancher/go-rancher) 项目
+v2.x基于 [types](
+https://github.com/rancher/types) 项目，其又依赖 [norman](
+https://github.com/rancher/norman) 项目
