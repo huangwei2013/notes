@@ -7,7 +7,6 @@ mkdir -p $GOPATH/src/github.com/rancher
 cd $GOPATH/src/github.com/rancher
 git clone https://github.com/rancher/rancher.git
 cd rancher
-git checkout v2.2.3-rc9
 ```
 
 * 注1：
@@ -26,12 +25,11 @@ cd $GOPATH/src/github.com/rancher/rancher
 * 注2：
 编译、打包过程都出错中断过几次，重复执行，却都成功了。归咎于网络、服务器繁忙导致timeout吧
     
-* 注3：
+* 注3:（2.3.3版本后好像问题解决了，该步骤可省略)
 打包过程，唯一需要调整的，是创建 ./dist ,打包最后阶段需要向其中写入新生成镜像的名称, 但不知为何脚本本身缺少了创建该目录
 
-
-* 注4:
-    调整了一行编译脚本内容
+* 注4: (2.3.3版本后好像问题解决了，该步骤可省略)
+调整了一行编译脚本内容
 对编译脚本 ./scripts/package 从
 ```shell
 echo Built ${IMAGE} #${AGENT_IMAGE}
@@ -39,13 +37,13 @@ echo Built ${IMAGE} #${AGENT_IMAGE}
 改为(去掉注释符号)
 ```shell
 echo Built ${IMAGE} ${AGENT_IMAGE}
- ```
- 
- * 注5:
-    重复编译时,会提示 /tmp/system-charts 已经存在,需要手动删除后再编译
+```
 
-# 结果
+* 注5: (2.3.3版本后好像问题解决了，该步骤可省略)
+重复编译时,会提示 /tmp/system-charts 已经存在,需要手动删除后再编译
+  
 
+# 编译输出
 编译后的文件存放在 $GOPATH/src/github.com/rancher/rancher/bin 目录
 查看
 ```shell
@@ -60,9 +58,28 @@ REPOSITORY                   TAG              �
 rancher/rancher-agent        dev                 42545cac55a7        About a minute ago   283MB
 ```
 
+# 使用
+## 基于镜像部署的替换
 
+如 rancher 使用镜像方式启动
+```
+docker run -d --restart=unless-stopped -p 80:80 -p 443:443 rancher/rancher
+```
+
+假定docker 实例名称为 awesome_dijkstra
+```
+#在编译目录下，替换 rancher 可执行文件
+docker cp bin/rancher awesome_dijkstra:/usr/bin
+
+#重启容器生效
+docker restart awesome_dijkstra
+```
+* 注6：
+之前用v2.2.3-rc9源码包，编译成功，按此方法和2.3.3镜像部署配合使用时，因etcd版本要求不同，会导致rancher/rancher启动失败。
+更换源码包为master分支后，解决。
 
 # 备注
+## 编译和运行环境
 ```
 centos 7.6
 2C4G
