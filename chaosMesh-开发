@@ -1,4 +1,19 @@
-# 镜像
+
+# 概述
+chaosmesh是一款K8S环境用的混沌工程轻量级实现，支持多种混沌场景构建。
+它可通过docker镜像方式部署，但如果想修改/二次开发，它的编译不是很便捷（you may try..）。
+因此这里基于官方方式，拆分成几个子步骤：
+* 最重的部分是第一步
+* 而和代码相关是第二步
+* 第三步是为了生成可部署的镜像
+
+以下执行目录都是在 chaos-mesh/
+前置步骤是：
+	docker环境
+	golang开发环境
+	git clone https://github.com/pingcap/chaos-mesh
+
+# 编译生成镜像
 ## 1.基础镜像
 
 **剥离出，基础镜像生成部分**
@@ -93,6 +108,7 @@ chaosmesh_buildbase                                                           0.
 
 ## 2.镜像+代码合集
 
+
 **剥离出，业务镜像生成部分**
 命名为独立Dockerfile文件：Dockerfile.buildbinary
 ```
@@ -120,7 +136,7 @@ RUN make binary
 ```
 
 **执行镜像生成**
-2C8G，约耗时0.5小时
+2C8G，约耗时0.5小时，后续执行有只需2分钟
 ```
 docker build -f Dockerfile.buildbinary -t chaosmesh_my:0.1 .
 ```
@@ -210,6 +226,7 @@ pingcap/chaos-daemon                                                          la
 ```
 
 ## 3.业务镜像
+从 
 ### chaos-daemon
 
 **业务镜像**
