@@ -9,9 +9,9 @@ chaosmesh是一款K8S环境用的混沌工程轻量级实现，支持多种混�
 
 以下执行目录都是在 chaos-mesh/
 前置步骤是：
-	docker环境
-	golang开发环境
-	git clone https://github.com/pingcap/chaos-mesh
+* docker环境
+* golang开发环境
+* git clone https://github.com/pingcap/chaos-mesh
 
 # 编译生成镜像
 ## 1.基础镜像
