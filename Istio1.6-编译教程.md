@@ -80,10 +80,10 @@ docker tag  registry.cn-zhangjiakou.aliyuncs.com/com_ka_img/istio:cc-v0.1 gcr.io
 
 tag后，镜像的摘要信息有问题，导致必须做以下处理：
 ``` 
-//(不止一处)把编译出错提示中，摘要信息，从编译脚本中删去....
-    FROM gcr.io/distroless/cc@sha256:f81e5db8287d66b012d874a6f7fea8da5b96d9cc509aa5a9b5d095a604d4bca1 as distroless
-        改为
-    FROM gcr.io/distroless/cc as distroless
+(不止一处)把编译出错提示中，摘要信息，从编译脚本中删去....
+FROM gcr.io/distroless/cc@sha256:f81e5db8287d66b012d874a6f7fea8da5b96d9cc509aa5a9b5d095a604d4bca1 as distroless
+    改为
+FROM gcr.io/distroless/cc as distroless
 ```
 
 
@@ -96,10 +96,10 @@ docker tag  registry.cn-zhangjiakou.aliyuncs.com/com_ka_img/istio:static-debian1
 
 （同上）tag后，镜像的摘要信息有问题，导致必须做以下处理：
 ``` 
-//(不止一处)把编译出错提示中，摘要信息，从编译脚本中删去....
-    FROM FROM gcr.io/distroless/static-debian10@sha256:4433370ec2b3b97b338674b4de5ffaef8ce5a38d1c9c0cb82403304b8718cde9
-        改为
-    FROM gcr.io/distroless/static-debian10
+(不止一处)把编译出错提示中，摘要信息，从编译脚本中删去....
+FROM FROM gcr.io/distroless/static-debian10@sha256:4433370ec2b3b97b338674b4de5ffaef8ce5a38d1c9c0cb82403304b8718cde9
+   改为
+FROM gcr.io/distroless/static-debian10
 ```
 
 
